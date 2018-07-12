@@ -14,6 +14,7 @@ try:
 
     builder = HandbrakeBuilder(build_dir)
     builder.set_environment()
+    builder.build_dep('https://github.com/HandBrake/HandBrake.git')
 
     sys.exit(0)
 except Exception as e:
