@@ -1,4 +1,5 @@
 
+from handbrake_builder.softwarepackage import SoftwarePackage
 import os
 import re
 import subprocess
@@ -29,62 +30,98 @@ class HandbrakeBuilder:
     def set_environment(self):
 
         os.environ['PKG_CONFIG_PATH'] = '{0}/lib/pkgconfig'.format(self.dir_dest)
-        os.environ['PATH'] += os.pathsep + os.path.join(self.TOOLPATH, 'bin')
+        os.environ['PATH'] += os.pathsep + os.path.join(self.TOOLPATH)
         os.environ['PATH'] += os.pathsep + os.path.join(self.dir_dest, 'bin')
+        os.environ['CFLAGS'] = '-I{0}/include'.format(self.dir_dest)
+        os.environ['CFLAGS'] = '-L{0}/lib'.format(self.dir_dest)
 
         return True
-        # export
-        # PATH =${TOOLPATH}: / bin: / usr / bin:${BUILD_DIR} / bin
-        # export
-        # CFLAGS = "-I${BUILD_DIR}/include -I${BUILD_DIR}/include/libxml2"
-        # export
-        # LDFLAGS = -L${BUILD_DIR} / lib
+
+    def fetch_tarball(self, url):
+
+        tarball = os.path.basename(url)
+        dirname = os.path.splitext(tarball)
+        dirname = os.path.splitext(dirname[0])
+        dirname = os.path.join(self.dir_source, dirname[0])
+
+        srcball = os.path.join(self.dir_download, tarball)
+
+        package = SoftwarePackage(dirname)
+
+        # Source directory already exists
+
+        if os.path.isdir(dirname):
+            return package
+
+        # Package already downloaded
+
+        if not os.path.isfile(os.path.join(self.dir_download, tarball)):
+
+            cmd = [ '/bin/wget', '-P', self.dir_download, url ]
+            r = subprocess.run(cmd, check=True)
+            if r.returncode != 0:
+                raise Exception('{0}: Unable to download'.format(tarball))
+
+        cmd = [ '/bin/tar', '-C', self.dir_source,  '-xf', srcball ]
+        r = subprocess.run(cmd, check=True)
+        if r.returncode != 0:
+            raise Exception('{0}: Unable to extract'.format(tarball))
+
+        return package
 
     def fetch_git(self, url):
 
         dirname = os.path.splitext(os.path.basename(url))
         dirname = os.path.join(self.dir_source, dirname[0])
 
+        package = SoftwarePackage(dirname)
+        pkgname = package.pkgname
+
         if not os.path.isdir(dirname):
-            cmd = '/bin/git clone {0} {1}'.format(url, dirname)
+            cmd = ['/bin/git', 'clone', url, dirname]
             r = subprocess.run(cmd, check=True)
             if r.returncode != 0:
                 raise Exception('{0}: Unable to clone'.format(dirname))
 
-            return True
+            return package
         else:
             cmd = ['/bin/git', '-C', dirname, 'rev-parse', 'HEAD']
             r = subprocess.run(cmd, check=True, stdout=subprocess.PIPE)
             if r.returncode != 0:
-                raise Exception('{0}: Unable to check HEAD rev'.format(dirname))
+                raise Exception('{0}: Unable to check HEAD rev'.format(pkgname))
             local = r.stdout
 
             cmd = ['/bin/git', '-C', dirname, 'rev-parse', '@{upstream}']
             r = subprocess.run(cmd, check=True, stdout=subprocess.PIPE)
             if r.returncode != 0:
-                raise Exception('{0}: Unable to check upstream rev'.format(dirname))
+                raise Exception('{0}: Unable to check upstream rev'.format(pkgname))
             remote = r.stdout
 
             if local == remote:
-                print('{0}: No changes to repo'.format(dirname))
-                return True
+                print('{0}: No changes to repo'.format(pkgname))
+                return package
 
             r = subprocess.run(cmd, check=True)
             if r.returncode != 0:
                 raise Exception('{0}: Unable to pull'.format(dirname))
 
             # Remove done flags
-            return True
+            return package
 
-    def build_dep(self, url):
+    def build_dep(self, url, pkgtype, **args):
 
         gitrepo = re.match('^.*\.git$', url)
         tarball = re.match('^.*\.tar\.gz$', url)
 
         if gitrepo:
-            self.fetch_git(url)
+            package = self.fetch_git(url)
         elif tarball:
-            self.fetch_tarball(url)
+            package = self.fetch_tarball(url)
         else:
-            raise Exception('{0}: Unknown dependency type'.format(url))
+            raise Exception('{0}: Unknown repo type'.format(url))
 
+        config_args = args['config_args'] if 'config_args' in args else []
+
+        package.configure(pkgtype, self.dir_dest, self.TOOLPATH, self.TOOLCHAIN, config_args)
+        package.build()
+        package.install()
