@@ -3,6 +3,7 @@ from handbrake_builder.softwarepackage import SoftwarePackage
 import os
 import re
 import subprocess
+import sys
 
 class HandbrakeBuilder:
 
@@ -20,6 +21,8 @@ class HandbrakeBuilder:
         self.dir_source = os.path.join(build_base, 'src')
         self.dir_handbrake = os.path.join(self.dir_source, 'HandBrake')
         self.dir_dest = os.path.join(self.dir_handbrake, 'build', 'contrib')
+        self.dir_lib = os.path.join(self.dir_dest, 'lib')
+        self.dir_scripts = os.path.join(os.path.dirname(sys.argv[0]), 'scripts')
 
         for dir in [self.dir_download, self.dir_source]:
             if not os.path.isdir(dir):
@@ -32,8 +35,9 @@ class HandbrakeBuilder:
         os.environ['PKG_CONFIG_PATH'] = '{0}/lib/pkgconfig'.format(self.dir_dest)
         os.environ['PATH'] += os.pathsep + os.path.join(self.TOOLPATH)
         os.environ['PATH'] += os.pathsep + os.path.join(self.dir_dest, 'bin')
-        os.environ['CFLAGS'] = '-I{0}/include'.format(self.dir_dest)
-        os.environ['CFLAGS'] = '-L{0}/lib'.format(self.dir_dest)
+        os.environ['CFLAGS'] = '-I{0}/include -I{0}/include/libxml2'.format(self.dir_dest, self.dir_dest)
+        os.environ['LDFLAGS'] = '-L{0}/lib'.format(self.dir_dest)
+        os.environ['LD_LIBRARY_PATH'] = self.dir_dest
 
         return True
 
@@ -111,7 +115,7 @@ class HandbrakeBuilder:
     def build_dep(self, url, pkgtype, **args):
 
         gitrepo = re.match('^.*\.git$', url)
-        tarball = re.match('^.*\.tar\.gz$', url)
+        tarball = re.match('^.*\.tar\.gz$', url) or re.match('^.*\.tar\.bz2$', url)
 
         if gitrepo:
             package = self.fetch_git(url)
@@ -120,8 +124,18 @@ class HandbrakeBuilder:
         else:
             raise Exception('{0}: Unknown repo type'.format(url))
 
+        force_autogen = args['force_autogen'] if 'force_autogen' in args else []
         config_args = args['config_args'] if 'config_args' in args else []
+        config_post = args['config_post'] if 'config_post' in args else []
+        build_dir = args['build_dir'] if 'build_dir' in args else None
+        build_args = args['build_args'] if 'build_args' in args else None
+        build_flags = args['build_flags'] if 'build_flags' in args else []
+        install_args = args['install_args'] if 'install_args' in args else []
 
-        package.configure(pkgtype, self.dir_dest, self.TOOLPATH, self.TOOLCHAIN, config_args)
-        package.build()
-        package.install()
+        package.set_toolchain(self.TOOLPATH, self.TOOLCHAIN)
+        package.configure(pkgtype, self.dir_dest, config_args, force_autogen)
+        if config_post:
+            package.post_configure(config_post, self.dir_scripts)
+
+        package.build(build_dir, build_flags, build_args)
+        package.install(install_args, build_dir)
