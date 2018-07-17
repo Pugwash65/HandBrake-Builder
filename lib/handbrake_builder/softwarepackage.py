@@ -1,6 +1,7 @@
 
 from enum import Enum
 import subprocess
+import sys
 import os
 
 class PackageTypes(Enum):
@@ -152,6 +153,9 @@ class SoftwarePackage:
 
             cmd += config_args
 
+        print('=== CONFIGURE: {0} ==='.format(self.pkgname))
+        sys.stdout.flush()
+
         r = subprocess.run(cmd, check=True, cwd=dirname, env=env)
 
         if r.returncode != 0:
@@ -173,6 +177,9 @@ class SoftwarePackage:
             script = os.path.join(dir_scripts, post)
             if not os.path.isfile(script):
                 raise Exception('{0}: Post configure script not found'.format(post))
+
+            print('=== POST CONFIGURE: {0} ==='.format(post))
+            sys.stdout.flush()
 
             r = subprocess.run(script, check=True, cwd=build_dir)
 
@@ -196,11 +203,13 @@ class SoftwarePackage:
 
         build_dir = self.dirname if build_dir is None else os.path.join(self.dirname, build_dir)
 
-        cmd = ['make']
-        cmd += build_args
+        cmd = ['make', build_dir]
 
         for key in env:
             cmd += ['{0}={1}'.format(key, env[key])]
+
+        print('=== BUILD: {0} ==='.format(self.pkgname))
+        sys.stdout.flush()
 
         r = subprocess.run(cmd, check=True, cwd=build_dir)
 
@@ -223,6 +232,9 @@ class SoftwarePackage:
 
         cmd = ['make']
         cmd += install_args
+
+        print('=== INSTALL: {0} ==='.format(self.pkgname))
+        sys.stdout.flush()
 
         r = subprocess.run(cmd, check=True, cwd=build_dir)
 
