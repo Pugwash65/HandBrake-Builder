@@ -15,14 +15,18 @@ try:
     builder = HandbrakeBuilder(build_dir)
     builder.set_environment()
     hb = builder.fetch_git('https://github.com/HandBrake/HandBrake.git')
-    # hb.configure(PackageTypes.HANDBRAKE, hb.dirname, builder.TOOLPATH, builder.TOOLCHAIN)
+
+    hb.set_toolchain(builder.TOOLPATH, builder.TOOLCHAIN)
+
+    hb.configure(PackageTypes.HANDBRAKE, hb.dirname, builder.TOOLPATH, builder.TOOLCHAIN)
+    hb.post_configure(['patch_handbrake.sh'], builder.dir_scripts)
 
     builder.build_dep('https://datapacket.dl.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz', PackageTypes.CROSSHOST)
     builder.build_dep('https://archive.mozilla.org/pub/opus/opus-1.2.1.tar.gz', PackageTypes.CROSSHOST)
     builder.build_dep('http://downloads.us.xiph.org/releases/speex/speex-1.2.0.tar.gz', PackageTypes.CROSSHOST)
     builder.build_dep('https://github.com/madler/zlib.git', PackageTypes.CROSSENV,
                       install_args=['install', 'prefix={0}'.format(builder.dir_dest)])
-    # builder.build_dep('https://git.tukaani.org/xz.git', PackageTypes.CROSSHOST)
+    builder.build_dep('https://git.tukaani.org/xz.git', PackageTypes.CROSSHOST)
     builder.build_dep('http://xmlsoft.org/sources/libxml2-2.9.8.tar.gz', PackageTypes.CROSSHOST, config_args = ['--without-python','--without-lzma'])
     # builder.build_dep('https://github.com/akheron/jansson.git', PackageTypes.AUTORECONF)
     # builder.build_dep('https://github.com/xiph/ogg.git', PackageTypes.CROSSHOST)
@@ -44,8 +48,8 @@ try:
     builder.build_dep('https://vorboss.dl.sourceforge.net/project/libuuid/libuuid-1.0.3.tar.gz', PackageTypes.CROSSHOST)
     builder.build_dep('http://ftp.gnu.org/pub/gnu/gperf/gperf-3.1.tar.gz', PackageTypes.CROSSHOST)
     builder.build_dep('https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.0.tar.bz2', PackageTypes.CROSSHOST)
-    # builder.build_dep('https://github.com/enthought/bzip2-1.0.6.git', PackageTypes.PLAINENV,
-    #                   build_flags=[BuildFlags.SETENV], install_args=['install', 'PREFIX={0}'.format(builder.dir_dest)])
+    builder.build_dep('https://github.com/enthought/bzip2-1.0.6.git', PackageTypes.PLAINENV,
+                      build_flags=[BuildFlags.SETENV], install_args=['install', 'PREFIX={0}'.format(builder.dir_dest)])
 
     hb.build('build')
 

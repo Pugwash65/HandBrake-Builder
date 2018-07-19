@@ -15,7 +15,7 @@ class HandbrakeBuilder:
         self.build_base = build_base
 
         if not os.path.isdir(build_base):
-            raise Exception('{0}: Build directory is missing'.format(build_base))
+            raise Exception('{0}: Project build directory is missing'.format(build_base))
 
         self.dir_download = os.path.join(build_base, 'download')
         self.dir_source = os.path.join(build_base, 'src')

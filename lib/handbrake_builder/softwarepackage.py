@@ -134,6 +134,7 @@ class SoftwarePackage:
 
         elif pkgtype == PackageTypes.HANDBRAKE:
 
+            print(toolpath)
             cmd = [ self.CMD_CONFIGURE,
                     '--prefix={0}'.format(dir_dest),
                     '--disable-gtk',
@@ -203,7 +204,8 @@ class SoftwarePackage:
 
         build_dir = self.dirname if build_dir is None else os.path.join(self.dirname, build_dir)
 
-        cmd = ['make', build_dir]
+        # cmd = ['make', build_dir]
+        cmd = ['make']
 
         for key in env:
             cmd += ['{0}={1}'.format(key, env[key])]
