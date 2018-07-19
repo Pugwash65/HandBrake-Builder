@@ -36,8 +36,7 @@ class HandbrakeBuilder:
         os.environ['PATH'] += os.pathsep + os.path.join(self.TOOLPATH)
         os.environ['PATH'] += os.pathsep + os.path.join(self.dir_dest, 'bin')
         os.environ['CFLAGS'] = '-I{0}/include -I{0}/include/libxml2 -fPIC'.format(self.dir_dest, self.dir_dest)
-        # os.environ['CFLAGS'] = '-I{0}/include -I{0}/include/libxml2'.format(self.dir_dest, self.dir_dest)
-        os.environ['LDFLAGS'] = '-L{0}/lib'.format(self.dir_dest)
+        os.environ['LDFLAGS'] = '-L{0}/lib -Wl,-rpath-link={1}/lib'.format(self.dir_dest, self.dir_dest)
         os.environ['LD_LIBRARY_PATH'] = self.dir_dest
 
         # For libvpx
