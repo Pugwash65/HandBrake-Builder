@@ -4,6 +4,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 class HandbrakeBuilder:
 
@@ -30,6 +31,13 @@ class HandbrakeBuilder:
             if not os.path.isdir(dir):
                 raise Exception('{0}: Unable to create directory'.format(dir))
 
+    def notify(self, msg):
+
+        print(msg)
+        time.sleep(2)
+
+        return True
+
     def set_environment(self):
 
         os.environ['PKG_CONFIG_PATH'] = '{0}/lib/pkgconfig'.format(self.dir_dest)
@@ -55,6 +63,8 @@ class HandbrakeBuilder:
         srcball = os.path.join(self.dir_download, tarball)
 
         package = SoftwarePackage(dirname)
+
+        self.notify('=== FETCHING: {0} ==='.format(tarball))
 
         # Source directory already exists
 
@@ -85,6 +95,8 @@ class HandbrakeBuilder:
         package = SoftwarePackage(dirname)
         pkgname = package.pkgname
 
+        self.notify('=== FETCHING: {0} ==='.format(dirname))
+
         if not os.path.isdir(dirname):
             cmd = ['/bin/git', 'clone', url, dirname]
             r = subprocess.run(cmd, check=True)
@@ -106,7 +118,7 @@ class HandbrakeBuilder:
             remote = r.stdout
 
             if local == remote:
-                print('{0}: No changes to repo'.format(pkgname))
+                self.notify('=== No changes to repo: {0} ==='.format(pkgname))
                 return package
 
             r = subprocess.run(cmd, check=True)

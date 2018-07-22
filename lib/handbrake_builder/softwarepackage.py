@@ -1,6 +1,7 @@
 
 from enum import Enum
 import subprocess
+import time
 import sys
 import os
 
@@ -40,6 +41,13 @@ class SoftwarePackage:
             'LDFLAGS': os.environ['LDFLAGS'],
             'PKG_CONFIG_PATH': os.environ['PKG_CONFIG_PATH']
         }
+
+    def notify(self, msg):
+
+        print(msg)
+        time.sleep(2)
+
+        return True
 
     def set_toolchain(self, toolpath, toolchain):
         self.toolpath = toolpath
@@ -84,7 +92,7 @@ class SoftwarePackage:
         toolchain = self.toolchain
 
         if self.is_locked(self.DONE_CONFIGURE):
-            print('{0}: Already configured'.format(self.pkgname))
+            self.notify('=== Already configured: {0} ==='.format(self.pkgname))
             return True
 
         if pkgtype == PackageTypes.PLAINENV:
@@ -134,7 +142,6 @@ class SoftwarePackage:
 
         elif pkgtype == PackageTypes.HANDBRAKE:
 
-            print(toolpath)
             cmd = [ self.CMD_CONFIGURE,
                     '--prefix={0}'.format(dir_dest),
                     '--disable-gtk',
@@ -154,7 +161,7 @@ class SoftwarePackage:
 
             cmd += config_args
 
-        print('=== CONFIGURE: {0} ==='.format(self.pkgname))
+        self.notify('=== CONFIGURE: {0} ==='.format(self.pkgname))
         sys.stdout.flush()
 
         r = subprocess.run(cmd, check=True, cwd=dirname, env=env)
@@ -169,7 +176,7 @@ class SoftwarePackage:
     def post_configure(self, config_post, dir_scripts, build_dir = None):
 
         if self.is_locked(self.DONE_POST_CONFIGURE):
-            print('{0}: Already post configured'.format(self.pkgname))
+            self.notify('=== Already post-configured: {0} ==='.format(self.pkgname))
             return True
 
         build_dir = self.dirname if build_dir is None else os.path.join(self.dirname, build_dir)
@@ -179,7 +186,7 @@ class SoftwarePackage:
             if not os.path.isfile(script):
                 raise Exception('{0}: Post configure script not found'.format(post))
 
-            print('=== POST CONFIGURE: {0} ==='.format(post))
+            self.notify('=== POST CONFIGURE: {0} ==='.format(post))
             sys.stdout.flush()
 
             r = subprocess.run(script, check=True, cwd=build_dir)
@@ -194,7 +201,7 @@ class SoftwarePackage:
     def build(self, build_dir = None, build_flags = [], build_args = []):
 
         if self.is_locked(self.DONE_BUILD):
-            print('{0}: Already built'.format(self.pkgname))
+            self.notify('=== Already built: {0} ==='.format(self.pkgname))
             return True
 
         if BuildFlags.SETENV in build_flags:
@@ -210,7 +217,7 @@ class SoftwarePackage:
         for key in env:
             cmd += ['{0}={1}'.format(key, env[key])]
 
-        print('=== BUILD: {0} ==='.format(self.pkgname))
+        self.notify('=== BUILD: {0} ==='.format(self.pkgname))
         sys.stdout.flush()
 
         r = subprocess.run(cmd, check=True, cwd=build_dir)
@@ -225,7 +232,7 @@ class SoftwarePackage:
     def install(self, install_args = [], build_dir = None):
 
         if self.is_locked(self.DONE_INSTALL):
-            print('{0}: Already installed'.format(self.pkgname))
+            self.notify('=== Already installed: {0} ==='.format(self.pkgname))
             return True
 
         install_args = install_args if install_args else ['install']
@@ -235,7 +242,7 @@ class SoftwarePackage:
         cmd = ['make']
         cmd += install_args
 
-        print('=== INSTALL: {0} ==='.format(self.pkgname))
+        self.notify('=== INSTALL: {0} ==='.format(self.pkgname))
         sys.stdout.flush()
 
         r = subprocess.run(cmd, check=True, cwd=build_dir)
