@@ -31,13 +31,6 @@ class HandbrakeBuilder:
             if not os.path.isdir(dir):
                 raise Exception('{0}: Unable to create directory'.format(dir))
 
-    def notify(self, msg):
-
-        print(msg)
-        time.sleep(2)
-
-        return True
-
     def set_environment(self):
 
         os.environ['PKG_CONFIG_PATH'] = '{0}/lib/pkgconfig'.format(self.dir_dest)
@@ -64,7 +57,7 @@ class HandbrakeBuilder:
 
         package = SoftwarePackage(dirname)
 
-        self.notify('=== FETCHING: {0} ==='.format(tarball))
+        SoftwarePackage.notify('=== FETCHING: {0} ==='.format(tarball))
 
         # Source directory already exists
 
@@ -95,7 +88,7 @@ class HandbrakeBuilder:
         package = SoftwarePackage(dirname)
         pkgname = package.pkgname
 
-        self.notify('=== FETCHING: {0} ==='.format(dirname))
+        SoftwarePackage.notify('=== FETCHING: {0} ==='.format(dirname))
 
         if not os.path.isdir(dirname):
             cmd = ['/bin/git', 'clone', url, dirname]
@@ -118,7 +111,7 @@ class HandbrakeBuilder:
             remote = r.stdout
 
             if local == remote:
-                self.notify('=== No changes to repo: {0} ==='.format(pkgname))
+                SoftwarePackage.notify('=== No changes to repo: {0} ==='.format(pkgname))
                 return package
 
             r = subprocess.run(cmd, check=True)
@@ -151,7 +144,9 @@ class HandbrakeBuilder:
         package.set_toolchain(self.TOOLPATH, self.TOOLCHAIN)
         package.configure(pkgtype, self.dir_dest, config_args, force_autogen)
         if config_post:
-            package.post_configure(config_post, self.dir_scripts)
+            package.script(config_post, self.dir_scripts)
 
         package.build(build_dir, build_flags, build_args)
         package.install(install_args, build_dir)
+
+        return True

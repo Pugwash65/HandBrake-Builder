@@ -19,7 +19,7 @@ try:
     hb.set_toolchain(builder.TOOLPATH, builder.TOOLCHAIN)
 
     hb.configure(PackageTypes.HANDBRAKE, hb.dirname, builder.TOOLPATH, builder.TOOLCHAIN)
-    hb.post_configure(['patch_handbrake.sh'], builder.dir_scripts)
+    hb.script(['patch_handbrake.sh'], builder.dir_scripts)
     builder.build_dep('https://datapacket.dl.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz', PackageTypes.CROSSHOST)
     builder.build_dep('https://archive.mozilla.org/pub/opus/opus-1.2.1.tar.gz', PackageTypes.CROSSHOST)
     builder.build_dep('http://downloads.us.xiph.org/releases/speex/speex-1.2.0.tar.gz', PackageTypes.CROSSHOST)
@@ -51,6 +51,8 @@ try:
                       build_flags=[BuildFlags.SETENV], install_args=['install', 'PREFIX={0}'.format(builder.dir_dest)])
 
     hb.build('build')
+    # hb.bundle('bundle-hb.sh', builder.dir_scripts, 'build')
+    hb.script(['bundle-hb.sh'], builder.dir_scripts, 'build')
 
     sys.exit(0)
 except Exception as e:

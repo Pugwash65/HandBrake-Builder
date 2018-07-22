@@ -23,11 +23,13 @@ class SoftwarePackage:
     DONE_CONFIGURE = '.done-configure'
     DONE_BUILD = '.done-build'
     DONE_INSTALL = '.done-install'
-    DONE_POST_CONFIGURE = '.done-post-configure'
+    DONE_SCRIPT = '.done-script'
 
     CMD_CONFIGURE = './configure'
     CMD_AUTHGEN = './autogen.sh'
     CMD_AUTORECONF = 'autoreconf'
+
+    NOTIFY_DELAY = 0
 
     def __init__(self, dirname):
         self.toolpath = None
@@ -42,10 +44,11 @@ class SoftwarePackage:
             'PKG_CONFIG_PATH': os.environ['PKG_CONFIG_PATH']
         }
 
-    def notify(self, msg):
+    @staticmethod
+    def notify(msg):
 
         print(msg)
-        time.sleep(2)
+        time.sleep(SoftwarePackage.NOTIFY_DELAY)
 
         return True
 
@@ -173,20 +176,22 @@ class SoftwarePackage:
 
         return True
 
-    def post_configure(self, config_post, dir_scripts, build_dir = None):
-
-        if self.is_locked(self.DONE_POST_CONFIGURE):
-            self.notify('=== Already post-configured: {0} ==='.format(self.pkgname))
-            return True
+    def script(self, scripts, dir_scripts, build_dir = None):
 
         build_dir = self.dirname if build_dir is None else os.path.join(self.dirname, build_dir)
 
-        for post in config_post:
-            script = os.path.join(dir_scripts, post)
-            if not os.path.isfile(script):
-                raise Exception('{0}: Post configure script not found'.format(post))
+        for script in scripts:
+            lockname = '{0}-{1}'.format(self.DONE_SCRIPT, os.path.splitext(script)[0])
 
-            self.notify('=== POST CONFIGURE: {0} ==='.format(post))
+            if self.is_locked(lockname):
+                self.notify('=== Already run script: {0} ==='.format(script))
+                return True
+
+            script = os.path.join(dir_scripts, script)
+            if not os.path.isfile(script):
+                raise Exception('{0}: Script not found'.format(script))
+
+            self.notify('=== SCRIPT: {0} ==='.format(script))
             sys.stdout.flush()
 
             r = subprocess.run(script, check=True, cwd=build_dir)
@@ -194,7 +199,7 @@ class SoftwarePackage:
             if r.returncode != 0:
                 raise Exception('{0}: Unable to execute script'.format(script))
 
-        self.create_lock(self.DONE_POST_CONFIGURE)
+            self.create_lock(lockname)
 
         return True
 
