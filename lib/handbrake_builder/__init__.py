@@ -1,22 +1,25 @@
 
 from handbrake_builder.softwarepackage import SoftwarePackage
 import os
+import os.path
 import re
 import subprocess
 import sys
-import time
 
 class HandbrakeBuilder:
 
     TOOLCHAIN = "x86_64-QNAP-linux-gnu"
-    TOOLPATH = "/home/development/CT/{0}/cross-tools/bin".format(TOOLCHAIN)
+    # TOOLPATH = "/home/development/CT/{0}/cross-tools/bin".format(TOOLCHAIN)
 
-    def __init__(self, build_base):
+    def __init__(self, build_base, toolchain_path=None):
         self.filename = __file__
         self.build_base = build_base
+        self.toolchain_path = None
 
         if not os.path.isdir(build_base):
             raise Exception('{0}: Project build directory is missing'.format(build_base))
+
+        self.set_toolchain(toolchain_path)
 
         self.dir_download = os.path.join(build_base, 'download')
         self.dir_source = os.path.join(build_base, 'src')
@@ -31,10 +34,34 @@ class HandbrakeBuilder:
             if not os.path.isdir(dir):
                 raise Exception('{0}: Unable to create directory'.format(dir))
 
+    def set_toolchain(self, toolchain_path):
+
+        gcc='{0}-{1}'.format(self.TOOLCHAIN, 'gcc')
+
+        if toolchain_path is None:
+            cmd=['/bin/which', gcc]
+            r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+
+            if r.returncode != 0:
+                raise Exception('{0}: Unable to locate toolchain compiler: either set $PATH or use --toolchain-path'.format(gcc))
+
+            toolchain_path = r.stdout.decode()
+            toolchain_path=os.path.dirname(toolchain_path)
+        else:
+            cmd=os.path.join(toolchain_path, gcc)
+
+            if not os.path.isfile(cmd):
+                raise Exception('{0}: Not a valid toolchain compiler'.format(cmd))
+
+        self.toolchain_path = toolchain_path
+
+        return True
+
+
     def set_environment(self):
 
         os.environ['PKG_CONFIG_PATH'] = '{0}/lib/pkgconfig'.format(self.dir_dest)
-        os.environ['PATH'] += os.pathsep + os.path.join(self.TOOLPATH)
+        os.environ['PATH'] += os.pathsep + os.path.join(self.toolchain_path)
         os.environ['PATH'] += os.pathsep + os.path.join(self.dir_dest, 'bin')
         os.environ['CFLAGS'] = '-I{0}/include -I{0}/include/libxml2 -fPIC'.format(self.dir_dest, self.dir_dest)
         os.environ['LDFLAGS'] = '-L{0}/lib -Wl,-rpath-link={1}/lib'.format(self.dir_dest, self.dir_dest)
@@ -141,7 +168,7 @@ class HandbrakeBuilder:
         build_flags = args['build_flags'] if 'build_flags' in args else []
         install_args = args['install_args'] if 'install_args' in args else []
 
-        package.set_toolchain(self.TOOLPATH, self.TOOLCHAIN)
+        package.set_toolchain(self.toolchain_path, self.TOOLCHAIN)
         package.configure(pkgtype, self.dir_dest, config_args, force_autogen)
         if config_post:
             package.script(config_post, self.dir_scripts)

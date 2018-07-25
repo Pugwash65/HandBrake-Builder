@@ -3,22 +3,24 @@ from handbrake_builder import HandbrakeBuilder
 from handbrake_builder.softwarepackage import PackageTypes, BuildFlags
 import argparse
 import sys
+import os
 
 try:
     parser = argparse.ArgumentParser(description='Build HandBrakeCLI')
     parser.add_argument('--build-dir', action='store', help='set the build directory')
-
+    parser.add_argument('--toolchain-path', action='store', help='set the root directory of the toolchain')
 
     args = parser.parse_args()
     build_dir = args.build_dir
+    toolchain_path = args.toolchain_path
 
-    builder = HandbrakeBuilder(build_dir)
+    builder = HandbrakeBuilder(build_dir, toolchain_path)
     builder.set_environment()
     hb = builder.fetch_git('https://github.com/HandBrake/HandBrake.git')
 
-    hb.set_toolchain(builder.TOOLPATH, builder.TOOLCHAIN)
+    hb.set_toolchain(builder.toolchain_path, builder.TOOLCHAIN)
 
-    hb.configure(PackageTypes.HANDBRAKE, hb.dirname, builder.TOOLPATH, builder.TOOLCHAIN)
+    hb.configure(PackageTypes.HANDBRAKE, hb.dirname, builder.toolchain_path, builder.TOOLCHAIN)
     hb.script(['patch_handbrake.sh'], builder.dir_scripts)
     builder.build_dep('https://datapacket.dl.sourceforge.net/project/lame/lame/3.100/lame-3.100.tar.gz', PackageTypes.CROSSHOST)
     builder.build_dep('https://archive.mozilla.org/pub/opus/opus-1.2.1.tar.gz', PackageTypes.CROSSHOST)
