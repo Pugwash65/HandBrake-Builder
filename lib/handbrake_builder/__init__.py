@@ -123,7 +123,6 @@ class HandbrakeBuilder:
             if r.returncode != 0:
                 raise Exception('{0}: Unable to clone'.format(dirname))
 
-            return package
         else:
             cmd = ['/bin/git', '-C', dirname, 'rev-parse', 'HEAD']
             r = subprocess.run(cmd, check=True, stdout=subprocess.PIPE)
@@ -145,10 +144,15 @@ class HandbrakeBuilder:
             if r.returncode != 0:
                 raise Exception('{0}: Unable to pull'.format(dirname))
 
-            # Remove done flags
-            return package
+        return package
 
-    def build_dep(self, url, pkgtype, **args):
+    def build_dep(self, dep_data):
+
+        if 'url' not in dep_data or 'pkgtype' not in dep_data:
+            raise Exception('Builde dependency requires url and package type')
+
+        url = dep_data['url']
+        pkgtype = dep_data['pkgtype']
 
         gitrepo = re.match('^.*\.git$', url)
         tarball = re.match('^.*\.tar\.gz$', url) or re.match('^.*\.tar\.bz2$', url)
@@ -160,13 +164,13 @@ class HandbrakeBuilder:
         else:
             raise Exception('{0}: Unknown repo type'.format(url))
 
-        force_autogen = args['force_autogen'] if 'force_autogen' in args else []
-        config_args = args['config_args'] if 'config_args' in args else []
-        config_post = args['config_post'] if 'config_post' in args else []
-        build_dir = args['build_dir'] if 'build_dir' in args else None
-        build_args = args['build_args'] if 'build_args' in args else None
-        build_flags = args['build_flags'] if 'build_flags' in args else []
-        install_args = args['install_args'] if 'install_args' in args else []
+        force_autogen = dep_data['force_autogen'] if 'force_autogen' in dep_data else []
+        config_args = dep_data['config_args'] if 'config_args' in dep_data else []
+        config_post = dep_data['config_post'] if 'config_post' in dep_data else []
+        build_dir = dep_data['build_dir'] if 'build_dir' in dep_data else None
+        build_args = dep_data['build_args'] if 'build_args' in dep_data else None
+        build_flags = dep_data['build_flags'] if 'build_flags' in dep_data else []
+        install_args = dep_data['install_args'] if 'install_args' in dep_data else []
 
         package.set_toolchain(self.toolchain_path, self.TOOLCHAIN)
         package.configure(pkgtype, self.dir_dest, config_args, force_autogen)
