@@ -3,7 +3,6 @@ from handbrake_builder import HandbrakeBuilder
 from handbrake_builder.softwarepackage import PackageTypes, BuildFlags
 import argparse
 import sys
-import os
 
 try:
     parser = argparse.ArgumentParser(description='Build HandBrakeCLI')

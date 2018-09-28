@@ -8,7 +8,7 @@ export LD_LIBRARY_PATH=${DEST}/lib
 
 export LDFLAGS=-L${DEST}/lib
 
-export CFLAGS=-I${DEST}/include
+export CFLAGS="-O2 -I${DEST}/include"
 
 export PKG_CONFIG_PATH=${DEST}/lib/pkgconfig
 
