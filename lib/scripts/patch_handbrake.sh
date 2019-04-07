@@ -2,6 +2,7 @@
 
 LIBVPX_DEFS=contrib/libvpx/module.defs
 MAKE_DEFS=make/include/main.defs
+TEST_DEFS=test/module.defs
 HANDBRAKE_M4=build/project/handbrake.m4
 HANDBRAKE_MAKEFILE=build/GNUmakefile
 
@@ -36,6 +37,15 @@ fi
 
 if [ $? != 0 ]; then
  echo "Patch ${HANDBRAKE_MAKEFILE} faied"
+ exit 1
+fi
+
+# Disable NUMA
+
+/bin/perl -spi -e 's/dl m numa/dl m/' ${TEST_DEFS}
+
+if [ $? != 0 ]; then
+ echo "Patch ${TEST_DEFS} faied"
  exit 1
 fi
 

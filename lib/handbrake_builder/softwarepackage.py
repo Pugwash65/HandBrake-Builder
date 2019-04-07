@@ -187,7 +187,9 @@ class SoftwarePackage:
                 self.notify('=== Already run script: {0} ==='.format(script))
                 return True
 
-            script = os.path.join(dir_scripts, script)
+            cwd = os.getcwd()
+            script = os.path.join(cwd, dir_scripts, script)
+
             if not os.path.isfile(script):
                 raise Exception('{0}: Script not found'.format(script))
 
